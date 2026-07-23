@@ -67,7 +67,8 @@ def register():
         )
 
         conn.commit()
-        verification_link = (f"http://localhost:5000/api/auth/verify-email/{verification_token}")
+        verification_link = (f"https://flask-api-chqu.onrender.com/api/auth/verify-email/{verification_token}")
+     
         send_verification_email(email, fullname, verification_link)
 
         return jsonify({
