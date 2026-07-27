@@ -20,7 +20,10 @@ def get_connection():
         user=Config.MYSQL_USER,
         password=Config.MYSQL_PASSWORD,
         database=Config.MYSQL_DATABASE,
-        port=Config.MYSQL_PORT
+        port=Config.MYSQL_PORT,
+        # ssl=Config.SSL
+        ssl=Config.DB_SSL_CERTIFICATE,
+        cursorclass=pymysql.cursors.DictCursor
     )
 
     return connection
