@@ -7,6 +7,11 @@ from email_service import send_verification_email
 
 auth_bp = Blueprint("auth", __name__)
 
+@auth_bp.route("/", methods=["GET"])
+def home():
+    return "Flask is running"
+
+
 @auth_bp.route("/register", methods=["POST"])
 def register():
     data = request.get_json()
@@ -49,8 +54,7 @@ def register():
         }), 400
 
     # Hash password
-    hashed_password = bcrypt.generate_password_hash(password).decode
-    ("utf-8")
+    hashed_password = bcrypt.generate_password_hash(password).decode("utf-8")
     verification_token = secrets.token_urlsafe(32)
 
 
@@ -89,24 +93,64 @@ def register():
         if conn:
             conn.close()
 
+# @auth_bp.route("/verify-email/<token>", methods=["GET"])
+# def verify_email(token):
+#     cursor = None
+#     cursor = get_connection().cursor()
+
+#     cursor.execute(
+#         """
+#         SELECT id FROM users WHERE verification_token=%s
+#         """, (token,)
+#     )
+#     user = cursor.fetchone()
+
+#     if not user:
+#         cursor.close()
+#         return jsonify({
+#             "success": False,
+#             "message": "Invalid verification link."
+#         }), 400
+#     cursor.execute(
+#         """
+#         UPDATE users
+#         SET
+#             is_verified = TRUE,
+#             verification_token = NULL
+#         WHERE id=%s
+#         """, (user["id"],)
+#     )
+#     get_connection().commit()
+#     cursor.close()
+
+#     return jsonify({
+#         "success": True,
+#         "message": "Email verified successfully."
+#     }) 
 @auth_bp.route("/verify-email/<token>", methods=["GET"])
 def verify_email(token):
-    cursor = None
-    cursor = get_connection().cursor()
+    connection = get_connection()
+    cursor = connection.cursor()
 
     cursor.execute(
         """
-        SELECT id FROM users WHERE verification_token=%s
-        """, (token)
+        SELECT id FROM users
+        WHERE verification_token=%s
+        """,
+        (token,)
     )
+
     user = cursor.fetchone()
+    print(user)
 
     if not user:
         cursor.close()
+        connection.close()
         return jsonify({
             "success": False,
             "message": "Invalid verification link."
         }), 400
+
     cursor.execute(
         """
         UPDATE users
@@ -114,15 +158,21 @@ def verify_email(token):
             is_verified = TRUE,
             verification_token = NULL
         WHERE id=%s
-        """, (user["id"],)
+        """,
+        (user["id"],)
     )
-    get_connection().commit()
+
+    print("Rows updated:", cursor.rowcount)
+
+    connection.commit()
+
     cursor.close()
+    connection.close()
 
     return jsonify({
         "success": True,
         "message": "Email verified successfully."
-    }) 
+    })
 from flask_jwt_extended import create_access_token
 
 @auth_bp.route("/login", methods=["POST"])
