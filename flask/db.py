@@ -23,7 +23,8 @@ def get_connection():
         port=Config.MYSQL_PORT,
         # ssl=Config.SSL
         ssl=Config.DB_SSL_CERTIFICATE,
-        cursorclass=pymysql.cursors.DictCursor
+        cursorclass=pymysql.cursors.DictCursor,
+        autocommit=True
     )
 
     return connection

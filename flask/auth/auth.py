@@ -165,6 +165,16 @@ def verify_email(token):
     print("Rows updated:", cursor.rowcount)
 
     connection.commit()
+    cursor.execute(
+    """
+    SELECT is_verified, verification_token
+    FROM users
+    WHERE id=%s
+    """,
+    (user["id"],)
+    )
+    result = cursor.fetchone()
+    print("Database after commit:", result)
 
     cursor.close()
     connection.close()
