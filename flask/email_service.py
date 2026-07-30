@@ -5,7 +5,7 @@ from brevo.transactional_emails import (SendTransacEmailRequestSender, SendTrans
 
 def send_verification_email(email, subject, html):
     client = Brevo(
-        api_key=current_app.config("BREVO_API_KEY")
+        api_key=current_app.config["BREVO_API_KEY"]
     )
     client.transactional_emails.send_transac_email(
     subject=subject,
