@@ -5,6 +5,7 @@ from db import get_connection
 import secrets
 from email_service import send_verification_email
 
+
 auth_bp = Blueprint("auth", __name__)
 
 @auth_bp.route("/", methods=["GET"])
@@ -72,8 +73,10 @@ def register():
 
         conn.commit()
         verification_link = (f"https://flask-api-chqu.onrender.com/api/auth/verify-email/{verification_token}")
-     
-        send_verification_email(email, fullname, verification_link)
+        subject = "Verify your email"
+        html = f"<p>Please verify your email by clicking the link below:</p><p><a href=\"{verification_link}\">Verify Email</a></p>"
+
+        send_verification_email(email, subject, html)
 
         return jsonify({
             "success": True,
