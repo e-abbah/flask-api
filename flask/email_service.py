@@ -1,25 +1,3 @@
-# # from flask_mail import Message
-# # from extension import mail
-# import resend
-# from config import Config
-# def send_verification_email(email, fullname, verification_link):
-
-#     resend_api_key = Config.RESEND_API_KEY
-#     param = {
-#                 "from": "onboarding@resend.dev",
-#                 "to": email,
-#                 "subject": "Verify Email",
-#                 "html": f"""
-#                         Hello {fullname},
-                        
-#                         Thank you for registering.
-                        
-#                         Click the link to verify your email.
-#                         {verification_link}
-#                     """
-#             }
-#     resend.Emails.send(param)
- 
 from brevo import Brevo
 from config import Config
 from flask import current_app

@@ -74,7 +74,7 @@ def register():
         conn.commit()
         verification_link = (f"https://flask-api-chqu.onrender.com/api/auth/verify-email/{verification_token}")
         subject = "Verify your email"
-        html = f"<p>Please verify your email by clicking the link below:</p><p><a href=\"{verification_link}\">Verify Email</a></p>"
+        html = f"<h2>Welcome {fullname}</h2><p>Please verify your email by clicking the link below:</p><p><a href=\"{verification_link}\">Verify Email</a></p>"
 
         send_verification_email(email, subject, html)
 
