@@ -131,61 +131,102 @@ def register():
 #         "message": "Email verified successfully."
 #     }) 
 @auth_bp.route("/verify-email/<token>", methods=["GET"])
+# def verify_email(token):
+    # connection = get_connection()
+    # cursor = connection.cursor()
+
+    # cursor.execute(
+    #     """
+    #     SELECT id FROM users
+    #     WHERE verification_token=%s
+    #     """,
+    #     (token,)
+    # )
+
+    # user = cursor.fetchone()
+    # print(user)
+
+    # if not user:
+    #     cursor.close()
+    #     connection.close()
+    #     return jsonify({
+    #         "success": False,
+    #         "message": "Invalid verification link."
+    #     }), 400
+
+    # cursor.execute(
+    #     """
+    #     UPDATE users
+    #     SET
+    #         is_verified = TRUE,
+    #         verification_token = NULL
+    #     WHERE id=%s
+    #     """,
+    #     (user["id"],)
+    # )
+
+    # print("Rows updated:", cursor.rowcount)
+
+    # connection.commit()
+    # cursor.execute(
+    # """
+    # SELECT is_verified, verification_token
+    # FROM users
+    # WHERE id=%s
+    # """,
+    # (user["id"],)
+    # )
+    # result = cursor.fetchone()
+    # print("Database after commit:", result)
+
+    # cursor.close()
+    # connection.close()
+
+    # return jsonify({
+    #     "success": True,
+    #     "message": "Email verified successfully."
+    # })
+
+@auth_bp.route("/verify-email/<token>", methods=["GET"])
 def verify_email(token):
-    connection = get_connection()
-    cursor = connection.cursor()
+    conn = get_connection()
+    cursor = conn.cursor()
 
-    cursor.execute(
-        """
-        SELECT id FROM users
-        WHERE verification_token=%s
-        """,
-        (token,)
-    )
+    try:
+        cursor.execute("""
+            SELECT id
+            FROM Users
+            WHERE verification_token = %s
+            """, (token,))
 
-    user = cursor.fetchone()
-    print(user)
+        user = cursor.fetchone()
 
-    if not user:
-        cursor.close()
-        connection.close()
+        if not user:
+            return jsonify({
+                "success": False,
+                "message": "Invalid verification link."
+            }), 400
+
+        cursor.execute("""
+            UPDATE Users
+            SET
+                is_verified = TRUE,
+                verification_token = NULL
+            WHERE id = %s
+        """, (user["id"],))
+
+        # print(cursor.fetchone())
+
+        conn.commit()
+
         return jsonify({
-            "success": False,
-            "message": "Invalid verification link."
-        }), 400
+            "success": True,
+            "message": "Email verified successfully."
+        }), 200
 
-    cursor.execute(
-        """
-        UPDATE users
-        SET
-            is_verified = TRUE,
-            verification_token = NULL
-        WHERE id=%s
-        """,
-        (user["id"],)
-    )
-
-    print("Rows updated:", cursor.rowcount)
-
-    connection.commit()
-    cursor.execute(
-    """
-    SELECT is_verified, verification_token
-    FROM users
-    WHERE id=%s
-    """,
-    (user["id"],)
-    )
-    result = cursor.fetchone()
-    print("Database after commit:", result)
-
-    cursor.close()
-    connection.close()
-
-    return jsonify({
-        "success": True,
-        "message": "Email verified successfully."
-    })
+    finally:
+        cursor.close()
+        conn.close()
 from flask_jwt_extended import create_access_token
 
 @auth_bp.route("/login", methods=["POST"])
