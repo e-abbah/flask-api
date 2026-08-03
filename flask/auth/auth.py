@@ -195,7 +195,7 @@ def verify_email(token):
     try:
         cursor.execute("""
             SELECT id
-            FROM Users
+            FROM users
             WHERE verification_token = %s
             """, (token,))
 
