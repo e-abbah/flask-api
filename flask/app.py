@@ -1,5 +1,5 @@
 from flask import Flask, config, render_template #type: ignore
-from extension import (bcrypt, mail)
+from extension import (bcrypt, mail, jwt)
 from auth.auth import auth_bp
 from config import Config
 
@@ -7,6 +7,8 @@ app = Flask(__name__)
 app.config.from_object(Config)
 
 bcrypt.init_app(app)
+mail.init_app(app)
+jwt.init_app(app)
 
 app.register_blueprint(auth_bp, url_prefix="/api/auth")
 
