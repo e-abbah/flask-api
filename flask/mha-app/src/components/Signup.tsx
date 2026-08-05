@@ -15,6 +15,12 @@ export default function Signup() {
             placeholder="email address"
             className="p-3 rounded-xl border  border-white bg-white/20 mt-6 placeholder-white text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
+             <input
+            type="fullname"
+            placeholder="Full Name"
+            className="p-3 rounded-xl border border-white bg-white/20 placeholder-white text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+          
           <input
             type="password"
             placeholder="Password"

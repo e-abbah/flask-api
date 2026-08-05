@@ -1,4 +1,40 @@
+import {useState} from "react";
+
 export default function Login() {
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+ async function handleLogin(e: React.FormEvent) {
+  e.preventDefault();
+  setLoading(true);
+
+  try {
+    const response = await fetch("http://127.0.0.1:5000/api/auth/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      window.alert(`Login successful: ${data.message}`);
+    } else {
+      window.alert(`Login failed: ${data.message}`);
+    }
+  } catch (error) {
+    console.error(error);
+    window.alert("Unable to connect to the server");
+  } finally {
+    setEmail("");
+    setPassword("");
+    setLoading(false);
+  }
+}
+
   return (
     <div
       className="h-screen w-screen bg-cover bg-center flex items-center justify-center px-4 sm:px-6 lg:px-8"
@@ -9,22 +45,29 @@ export default function Login() {
             LOG IN
         </h2>
         <p className="text-white text-center ">Welcome back! We missed you</p>
-        <form className="flex flex-col gap-4">
+        <form className="flex flex-col gap-4" onSubmit={handleLogin}>
           <input
             type="email"
             placeholder="email address"
             className="p-3 rounded-xl border  border-white bg-white/20 mt-6 placeholder-white text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}    
           />
+       
           <input
             type="password"
             placeholder="Password"
             className="p-3 rounded-xl border border-white bg-white/20 placeholder-white text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}   
           />
+           
           <button
             type="submit"
-            className="bg-blue-500 text-white py-3 rounded-xl font-semibold hover:bg-blue-600 transition"
+            className="bg-blue-500 text-white py-3 rounded-xl font-semibold hover:bg-blue-600 transition  disabled:bg-gray-500 disabled:cursor-not-allowed"
+            disabled={loading}
           >
-            LOG IN
+            {loading ? "Logging in..." : "Log In"}
           </button>
         </form>
 
