@@ -243,7 +243,7 @@ def forgot_password():
 
         # Store the reset token in the database
         cursor.execute(
-            "UPDATE users SET password_reset_token=%s WHERE id=%s",
+            "UPDATE users SET reset_token=%s WHERE id=%s",
             (reset_token, user["id"])
         )
         conn.commit()
