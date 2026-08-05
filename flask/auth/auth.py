@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from flask import Blueprint, request, jsonify
 from email_validator import validate_email, EmailNotValidError
 from extension import bcrypt
@@ -7,6 +5,7 @@ from db import get_connection
 import secrets
 from email_service import send_verification_email
 from flask_jwt_extended import create_access_token
+from datetime import datetime, timedelta
 
 
 auth_bp = Blueprint("auth", __name__)
@@ -240,7 +239,7 @@ def forgot_password():
             }), 404
 
         # Generate a password reset token (you can use a library like `secrets` for this)
-        reset_token = create_access_token(identity=str(user["id"]), expires_delta=datetime.timedelta(minutes=30))
+        reset_token = create_access_token(identity=str(user["id"]), expires_delta=timedelta(minutes=30))
 
         # Store the reset token in the database
         cursor.execute(
