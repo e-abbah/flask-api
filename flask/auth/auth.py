@@ -212,7 +212,7 @@ def login():
         cursor.close()
         conn.close()
 
-auth_bp.route("/forgot-password", methods=["POST"])
+@auth_bp.route("/forgot-password", methods=["POST"])
 def forgot_password():
     data = request.get_json()
     email = data.get("email")
