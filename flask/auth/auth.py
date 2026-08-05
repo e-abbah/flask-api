@@ -1,9 +1,12 @@
+from datetime import datetime
+
 from flask import Blueprint, request, jsonify
 from email_validator import validate_email, EmailNotValidError
 from extension import bcrypt
 from db import get_connection
 import secrets
 from email_service import send_verification_email
+from flask_jwt_extended import create_access_token
 
 
 auth_bp = Blueprint("auth", __name__)
@@ -95,97 +98,6 @@ def register():
 
         if conn:
             conn.close()
-
-# @auth_bp.route("/verify-email/<token>", methods=["GET"])
-# def verify_email(token):
-#     cursor = None
-#     cursor = get_connection().cursor()
-
-#     cursor.execute(
-#         """
-#         SELECT id FROM users WHERE verification_token=%s
-#         """, (token,)
-#     )
-#     user = cursor.fetchone()
-
-#     if not user:
-#         cursor.close()
-#         return jsonify({
-#             "success": False,
-#             "message": "Invalid verification link."
-#         }), 400
-#     cursor.execute(
-#         """
-#         UPDATE users
-#         SET
-#             is_verified = TRUE,
-#             verification_token = NULL
-#         WHERE id=%s
-#         """, (user["id"],)
-#     )
-#     get_connection().commit()
-#     cursor.close()
-
-#     return jsonify({
-#         "success": True,
-#         "message": "Email verified successfully."
-#     }) 
-@auth_bp.route("/verify-email/<token>", methods=["GET"])
-# def verify_email(token):
-    # connection = get_connection()
-    # cursor = connection.cursor()
-
-    # cursor.execute(
-    #     """
-    #     SELECT id FROM users
-    #     WHERE verification_token=%s
-    #     """,
-    #     (token,)
-    # )
-
-    # user = cursor.fetchone()
-    # print(user)
-
-    # if not user:
-    #     cursor.close()
-    #     connection.close()
-    #     return jsonify({
-    #         "success": False,
-    #         "message": "Invalid verification link."
-    #     }), 400
-
-    # cursor.execute(
-    #     """
-    #     UPDATE users
-    #     SET
-    #         is_verified = TRUE,
-    #         verification_token = NULL
-    #     WHERE id=%s
-    #     """,
-    #     (user["id"],)
-    # )
-
-    # print("Rows updated:", cursor.rowcount)
-
-    # connection.commit()
-    # cursor.execute(
-    # """
-    # SELECT is_verified, verification_token
-    # FROM users
-    # WHERE id=%s
-    # """,
-    # (user["id"],)
-    # )
-    # result = cursor.fetchone()
-    # print("Database after commit:", result)
-
-    # cursor.close()
-    # connection.close()
-
-    # return jsonify({
-    #     "success": True,
-    #     "message": "Email verified successfully."
-    # })
 
 @auth_bp.route("/verify-email/<token>", methods=["GET"])
 def verify_email(token):
@@ -295,6 +207,65 @@ def login():
                     "role": user["role"]
                 }  
             }), 200
+
+    finally:
+        cursor.close()
+        conn.close()
+
+auth_bp.route("/forgot-password", methods=["POST"])
+def forgot_password():
+    data = request.get_json()
+    email = data.get("email")
+
+    if not email:
+        return jsonify({
+            "success": False,
+            "message": "Email is required"
+        }), 400
+
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            "SELECT id, fullname, email FROM users WHERE email=%s",
+            (email,)
+        )
+        user = cursor.fetchone()
+
+        if not user:
+            return jsonify({
+                "success": False,
+                "message": "Email not found"
+            }), 404
+
+        # Generate a password reset token (you can use a library like `secrets` for this)
+        reset_token = create_access_token(identity=str(user["id"]), expires_delta=datetime.timedelta(minutes=30))
+
+        # Store the reset token in the database
+        cursor.execute(
+            "UPDATE users SET password_reset_token=%s WHERE id=%s",
+            (reset_token, user["id"])
+        )
+        conn.commit()
+
+        # Send the password reset email
+        reset_link = f"https://flask-api-chqu.onrender.com/api/auth/reset-password/{reset_token}"
+        subject = "Reset Your Password"
+        html = f"<h2>Reset Your Password</h2><p>Please click the link below to reset your password:</p><p><a href=\"{reset_link}\">Reset Password</a></p>"
+
+        send_verification_email(email, subject, html)
+
+        return jsonify({
+            "success": True,
+            "message": "Password reset instructions sent to your email."
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 
     finally:
         cursor.close()
