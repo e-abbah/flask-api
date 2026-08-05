@@ -1,4 +1,43 @@
+import {useState} from "react"
+
 export default function Signup() {
+  const [email, setEmail] = useState("");
+  const [fullname, setFullname] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function handleLogin(e: React.FormEvent) {
+  e.preventDefault();
+  setLoading(true);
+
+  try {
+    const response = await fetch("http://127.0.0.1:5000/api/auth/signup", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, fullname, password }),
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      // window.alert(`Sign up successful: ${data.message}`);
+      window.location.href = "/login";
+    } else {
+      window.alert(`Sign up failed: ${data.message}`);
+    }
+  } catch (error) {
+    console.error(error);
+    window.alert("Unable to connect to the server");
+  } finally {
+    setEmail("");
+    setPassword("");
+    setFullname("");
+    setLoading(false);
+  }
+}
+
   return (
     <div
       className="h-screen w-screen bg-cover bg-center flex items-center justify-center px-4 sm:px-6 lg:px-8"
@@ -13,31 +52,39 @@ export default function Signup() {
           <input
             type="email"
             placeholder="email address"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             className="p-3 rounded-xl border  border-white bg-white/20 mt-6 placeholder-white text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
              <input
             type="fullname"
+            value={fullname}
+            onChange={(e) => setFullname(e.target.value)}
             placeholder="Full Name"
             className="p-3 rounded-xl border border-white bg-white/20 placeholder-white text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
-          
+
           <input
             type="password"
             placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             className="p-3 rounded-xl border border-white bg-white/20 placeholder-white text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
           />
           <button
             type="submit"
-            className="bg-blue-500 text-white py-3 rounded-xl font-semibold hover:bg-blue-600 transition"
+            onClick={handleLogin}
+            disabled={loading}
+            className="bg-blue-500 text-white py-3 rounded-xl font-semibold hover:bg-blue-600 transition disabled:bg-gray-500 disabled:cursor-not-allowed"
           >
-            SIGN UP
+           {loading ? "Signing up..." : "Sign Up"}
           </button>
         </form>
 
         <p className="text-sm mt-4 text-center text-white drop-shadow-md">
           Already have an account? {""}
           <a href="/login" className="underline">
-            Log In
+            Log in
           </a>
         </p>
       </div>
