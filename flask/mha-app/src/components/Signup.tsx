@@ -1,4 +1,5 @@
-import {useState} from "react"
+import {useState} from "react";
+import {useNavigate} from "react-router-dom";
 
 export default function Signup() {
   const [email, setEmail] = useState("");
@@ -6,12 +7,14 @@ export default function Signup() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const navigate = useNavigate();
+
   async function handleLogin(e: React.FormEvent) {
   e.preventDefault();
   setLoading(true);
 
   try {
-    const response = await fetch("http://127.0.0.1:5000/api/auth/signup", {
+    const response = await fetch("https://flask-api-chqu.onrender.com/api/auth/register", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -23,7 +26,7 @@ export default function Signup() {
 
     if (response.ok) {
       // window.alert(`Sign up successful: ${data.message}`);
-      window.location.href = "/login";
+      navigate("/login");
     } else {
       window.alert(`Sign up failed: ${data.message}`);
     }

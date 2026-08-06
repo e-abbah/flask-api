@@ -239,14 +239,16 @@ def forgot_password():
             }), 404
 
         # Generate a password reset token (you can use a library like `secrets` for this)
-        reset_token = create_access_token(identity=str(user["id"]), expires_delta=timedelta(minutes=30))
+        # reset_token = create_access_token(identity=str(user["id"]), expires_delta=timedelta(minutes=30))
 
-        # Store the reset token in the database
-        cursor.execute(
-            "UPDATE users SET reset_token=%s WHERE id=%s",
-            (reset_token, user["id"])
+        reset_token = secrets.token_urlsafe(32)
+        expires_at = datetime.now() + timedelta(minutes=30)
+        cursor.execute("""
+            UPDATE users
+            SET reset_token = %s, expire_date = %s
+            where id = %s
+        """, (reset_token, expires_at, user["id"])
         )
-        conn.commit()
 
         # Send the password reset email
         reset_link = f"https://flask-api-chqu.onrender.com/api/auth/reset-password/{reset_token}"
