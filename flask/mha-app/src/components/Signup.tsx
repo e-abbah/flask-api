@@ -1,5 +1,6 @@
 import {useState} from "react";
-import {useNavigate} from "react-router-dom";
+//import {useNavigate} from "react-router-dom";
+import {Link} from "react-router-dom";
 
 export default function Signup() {
   const [email, setEmail] = useState("");
@@ -7,7 +8,7 @@ export default function Signup() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const navigate = useNavigate();
+  //const navigate = useNavigate();
 
   async function handleLogin(e: React.FormEvent) {
   e.preventDefault();
@@ -26,7 +27,9 @@ export default function Signup() {
 
     if (response.ok) {
       // window.alert(`Sign up successful: ${data.message}`);
-      navigate("/login");
+      <Link to="/login" className="underline">
+        Log in
+        </Link>
     } else {
       window.alert(`Sign up failed: ${data.message}`);
     }
