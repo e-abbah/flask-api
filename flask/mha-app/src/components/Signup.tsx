@@ -1,6 +1,6 @@
 import {useState} from "react";
 //import {useNavigate} from "react-router-dom";
-import {Link} from "react-router-dom";
+import {Link, useNavigate} from "react-router-dom";
 
 export default function Signup() {
   const [email, setEmail] = useState("");
@@ -8,7 +8,7 @@ export default function Signup() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  //const navigate = useNavigate();
+  const navigate = useNavigate();
 
   async function handleLogin(e: React.FormEvent) {
   e.preventDefault();
@@ -27,9 +27,7 @@ export default function Signup() {
 
     if (response.ok) {
       // window.alert(`Sign up successful: ${data.message}`);
-      <Link to="/login" className="underline">
-        Log in
-        </Link>
+      navigate("/login");
     } else {
       window.alert(`Sign up failed: ${data.message}`);
     }
@@ -89,9 +87,9 @@ export default function Signup() {
 
         <p className="text-sm mt-4 text-center text-white drop-shadow-md">
           Already have an account? {""}
-          <a href="/login" className="underline">
-            Log in
-          </a>
+          <Link to="/login" className="underline">
+            Log In
+          </Link>
         </p>
       </div>
     </div>
