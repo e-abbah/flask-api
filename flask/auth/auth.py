@@ -271,3 +271,65 @@ def forgot_password():
     finally:
         cursor.close()
         conn.close()
+
+
+@auth_bp.route("/reset-password/<token>", methods=["POST"])
+def reset_password(token):
+    data = request.get_json()
+    new_password = data.get("new_password")
+
+    if not new_password:
+        return jsonify({
+            "success": False,
+            "message": "New password is required."
+        }), 400
+
+    if new_password < 6:
+        return jsonify({
+            "success": False,
+            "message": "Password must be at least 6 characters long."
+        }), 400
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT id
+            FROM Users
+            WHERE reset_token = %s AND expires_date > NOW()
+        """, (token,))
+
+        user = cursor.fetchone()
+        if not user:
+            return jsonify({
+                "success": False,
+                "message": "Invalid or expired token."
+            }), 400
+
+        hashed_password = bcrypt.generate_password_hash(new_password).decode("utf-8")
+
+        cursor.execute("""
+            UPDATE Users
+            SET password = %s, reset_token = NULL, expires_date = NULL
+            WHERE id = %s
+        """, (hashed_password, user["id"]))
+
+        return jsonify({
+            "success": True,
+            "message": "Password reset successful."
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
+
+    finally:
+        cursor.close()
+        conn.close()
+
+@auth_bp.route("/google", methods=["POST"])
+def google_login():
+    redirect_uri = url_for("auth.google_callback", _external=True)
+    return auth.google.authorize_redirect(redirect_uri)
