@@ -211,6 +211,146 @@ def login():
         cursor.close()
         conn.close()
 
+# @auth_bp.route("/forgot-password", methods=["POST"])
+# def forgot_password():
+#     data = request.get_json()
+#     email = data.get("email")
+
+#     if not email:
+#         return jsonify({
+#             "success": False,
+#             "message": "Email is required."
+#         }), 400
+#     try:
+#         conn = get_connection()
+#         cursor = conn.cursor()
+
+#         cursor.execute("""
+#             SELECT id, fullname, email
+#             FROM users
+#             WHERE email=%s
+#         """, (email,))
+
+#         user = cursor.fetchone()
+#         if not user:
+#             return jsonify({
+#                 "success": False,
+#                 "message": "Email not found."
+#             }), 404
+        
+#         reset_token = secrets.token_urlsafe(32)
+#         expires_at = datetime.now() + timedelta(minutes=30)
+
+#         cursor.execute("""
+#             UPDATE users
+#             SET reset_token = %s, expire_date = %s
+#             WHERE id = %s
+#         """, (reset_token, expires_at, user["id"]))
+
+
+
+#         reset_link = f"https://flask-api-sigma-pied.vercel.app/reset-password/{reset_token}"
+
+#         html = f"""
+#         <h2>Password Reset Request</h2>
+#         <p>Hello {user['fullname']},</p>
+#         <p>We received a request to reset your password.</p>
+#         <p>
+#             <a href="{reset_link}"
+#                style="
+#                     background:#2563eb;
+#                     color:white;
+#                     padding:12px 20px;
+#                     text-decoration:none;
+#                     border-radius:6px;">
+#                 Reset Password
+#             </a>
+#         </p>
+#         <p>This link will expire in <strong>30 minutes</strong>.</p>
+#         <p>If you didn't request a password reset, you can safely ignore this email.</p>
+#         <br>
+#         <p>Learning Platform Team</p>
+#         """
+
+#         send_verification_email(
+#             email,
+#             "Password Reset",
+#             html
+#         )
+
+#         return jsonify({
+#             "success": True,
+#             "message": "Password reset link sent to your email."
+#         }), 200
+
+#     except Exception as e:
+#         return jsonify({
+#             "success": False,
+#             "message": str(e)
+#         }), 500
+
+#     finally:
+#         cursor.close()
+#         conn.close()
+
+
+# @auth_bp.route("/reset-password/<token>", methods=["POST"])
+# def reset_password(token):
+#     data = request.get_json()
+#     new_password = data.get("new_password")
+
+#     if not new_password:
+#         return jsonify({
+#             "success": False,
+#             "message": "New password is required."
+#         }), 400
+
+#     if new_password < 6:
+#         return jsonify({
+#             "success": False,
+#             "message": "Password must be at least 6 characters long."
+#         }), 400
+#     try:
+#         conn = get_connection()
+#         cursor = conn.cursor()
+
+#         cursor.execute("""
+#             SELECT id
+#             FROM users
+#             WHERE reset_token = %s AND expire_date > NOW()
+#         """, (token,))
+
+#         user = cursor.fetchone()
+#         if not user:
+#             return jsonify({
+#                 "success": False,
+#                 "message": "Invalid or expired token."
+#             }), 400
+
+#         hashed_password = bcrypt.generate_password_hash(new_password).decode("utf-8")
+
+#         cursor.execute("""
+#             UPDATE users
+#             SET password = %s, reset_token = NULL, expire_date = NULL
+#             WHERE id = %s
+#         """, (hashed_password, user["id"]))
+
+#         return jsonify({
+#             "success": True,
+#             "message": "Password reset successful."
+#         }), 200
+
+#     except Exception as e:
+#         return jsonify({
+#             "success": False,
+#             "message": str(e)
+#         }), 500
+
+#     finally:
+#         cursor.close()
+#         conn.close()
+#
+
 @auth_bp.route("/forgot-password", methods=["POST"])
 def forgot_password():
     data = request.get_json()
@@ -221,6 +361,10 @@ def forgot_password():
             "success": False,
             "message": "Email is required."
         }), 400
+
+    conn = None
+    cursor = None
+
     try:
         conn = get_connection()
         cursor = conn.cursor()
@@ -228,33 +372,44 @@ def forgot_password():
         cursor.execute("""
             SELECT id, fullname, email
             FROM users
-            WHERE email=%s
+            WHERE email = %s
         """, (email,))
 
         user = cursor.fetchone()
+
         if not user:
             return jsonify({
                 "success": False,
                 "message": "Email not found."
             }), 404
-        
+
+        # Generate reset token
         reset_token = secrets.token_urlsafe(32)
         expires_at = datetime.now() + timedelta(minutes=30)
 
+        # Store token
         cursor.execute("""
             UPDATE users
-            SET reset_token = %s, expire_date = %s
+            SET reset_token = %s,
+                expire_date = %s
             WHERE id = %s
         """, (reset_token, expires_at, user["id"]))
 
+        conn.commit()
 
-
-        reset_link = f"https://flask-api-sigma-pied.vercel.app/reset-password/{reset_token}"
+        # Link to React frontend
+        reset_link = (
+            f"https://flask-api-sigma-pied.vercel.app/"
+            f"reset-password/{reset_token}"
+        )
 
         html = f"""
         <h2>Password Reset Request</h2>
+
         <p>Hello {user['fullname']},</p>
+
         <p>We received a request to reset your password.</p>
+
         <p>
             <a href="{reset_link}"
                style="
@@ -266,9 +421,19 @@ def forgot_password():
                 Reset Password
             </a>
         </p>
-        <p>This link will expire in <strong>30 minutes</strong>.</p>
-        <p>If you didn't request a password reset, you can safely ignore this email.</p>
+
+        <p>
+            This link will expire in
+            <strong>30 minutes</strong>.
+        </p>
+
+        <p>
+            If you didn't request a password reset,
+            you can safely ignore this email.
+        </p>
+
         <br>
+
         <p>Learning Platform Team</p>
         """
 
@@ -284,19 +449,32 @@ def forgot_password():
         }), 200
 
     except Exception as e:
+        if conn:
+            conn.rollback()
+
         return jsonify({
             "success": False,
             "message": str(e)
         }), 500
 
     finally:
-        cursor.close()
-        conn.close()
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
 
 
 @auth_bp.route("/reset-password/<token>", methods=["POST"])
 def reset_password(token):
     data = request.get_json()
+
+    if not data:
+        return jsonify({
+            "success": False,
+            "message": "Request body is required."
+        }), 400
+
     new_password = data.get("new_password")
 
     if not new_password:
@@ -305,35 +483,50 @@ def reset_password(token):
             "message": "New password is required."
         }), 400
 
-    if new_password < 6:
+    if len(new_password) < 6:
         return jsonify({
             "success": False,
             "message": "Password must be at least 6 characters long."
         }), 400
+
+    conn = None
+    cursor = None
+
     try:
         conn = get_connection()
         cursor = conn.cursor()
 
+        # Validate reset token
         cursor.execute("""
             SELECT id
             FROM users
-            WHERE reset_token = %s AND expire_date > NOW()
+            WHERE reset_token = %s
+              AND expire_date > NOW()
         """, (token,))
 
         user = cursor.fetchone()
+
         if not user:
             return jsonify({
                 "success": False,
                 "message": "Invalid or expired token."
             }), 400
 
-        hashed_password = bcrypt.generate_password_hash(new_password).decode("utf-8")
+        # Hash new password
+        hashed_password = bcrypt.generate_password_hash(
+            new_password
+        ).decode("utf-8")
 
+        # Update password and invalidate token
         cursor.execute("""
             UPDATE users
-            SET password = %s, reset_token = NULL, expire_date = NULL
+            SET password = %s,
+                reset_token = NULL,
+                expire_date = NULL
             WHERE id = %s
         """, (hashed_password, user["id"]))
+
+        conn.commit()
 
         return jsonify({
             "success": True,
@@ -341,14 +534,22 @@ def reset_password(token):
         }), 200
 
     except Exception as e:
+        if conn:
+            conn.rollback()
+
         return jsonify({
             "success": False,
             "message": str(e)
         }), 500
 
     finally:
-        cursor.close()
-        conn.close()
+        if cursor:
+            cursor.close()
+
+        if conn:
+            conn.close()
+
+
 @auth_bp.route("/google", methods=["POST"])
 def google_login():
     redirect_uri = url_for("auth.google_callback", _external=True)
