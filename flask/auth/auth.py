@@ -219,53 +219,74 @@ def forgot_password():
     if not email:
         return jsonify({
             "success": False,
-            "message": "Email is required"
+            "message": "Email is required."
         }), 400
-
     try:
         conn = get_connection()
         cursor = conn.cursor()
 
-        cursor.execute(
-            "SELECT id, fullname, email FROM users WHERE email=%s",
-            (email,)
-        )
-        user = cursor.fetchone()
+        cursor.execute("""
+            SELECT id, fullname, email
+            FROM Users
+            WHERE email=%s
+        """, (email,))
 
+        user = cursor.fetchone()
         if not user:
             return jsonify({
                 "success": False,
-                "message": "Email not found"
+                "message": "Email not found."
             }), 404
-
-        # Generate a password reset token (you can use a library like `secrets` for this)
-        # reset_token = create_access_token(identity=str(user["id"]), expires_delta=timedelta(minutes=30))
-
+        
         reset_token = secrets.token_urlsafe(32)
         expires_at = datetime.now() + timedelta(minutes=30)
+
         cursor.execute("""
-            UPDATE users
-            SET reset_token = %s, expire_date = %s
-            where id = %s
-        """, (reset_token, expires_at, user["id"])
+            UPDATE Users
+            SET reset_token = %s, expires_date = %s
+            WHERE id = %s
+        """, (reset_token, expires_at, user["id"]))
+
+
+
+        reset_link = f"http://localhost:5173/reset-password/{reset_token}"
+
+        html = f"""
+        <h2>Password Reset Request</h2>
+        <p>Hello {user['fullname']},</p>
+        <p>We received a request to reset your password.</p>
+        <p>
+            <a href="{reset_link}"
+               style="
+                    background:#2563eb;
+                    color:white;
+                    padding:12px 20px;
+                    text-decoration:none;
+                    border-radius:6px;">
+                Reset Password
+            </a>
+        </p>
+        <p>This link will expire in <strong>30 minutes</strong>.</p>
+        <p>If you didn't request a password reset, you can safely ignore this email.</p>
+        <br>
+        <p>Learning Platform Team</p>
+        """
+
+        send_verification_email(
+            email,
+            "Password Reset",
+            html
         )
-
-        # Send the password reset email
-        reset_link = f"https://flask-api-chqu.onrender.com/api/auth/reset-password/{reset_token}"
-        subject = "Reset Your Password"
-        html = f"<h2>Reset Your Password</h2><p>Please click the link below to reset your password:</p><p><a href=\"{reset_link}\">Reset Password</a></p>"
-
-        send_verification_email(email, subject, html)
 
         return jsonify({
             "success": True,
-            "message": "Password reset instructions sent to your email."
+            "message": "Password reset link sent to your email."
         }), 200
 
     except Exception as e:
         return jsonify({
             "success": False,
-            "error": str(e)
+            "message": str(e)
         }), 500
 
     finally:
@@ -328,8 +349,57 @@ def reset_password(token):
     finally:
         cursor.close()
         conn.close()
-
 @auth_bp.route("/google", methods=["POST"])
 def google_login():
     redirect_uri = url_for("auth.google_callback", _external=True)
     return auth.google.authorize_redirect(redirect_uri)
+
+@auth_bp.route("/google/callback", methods=["GET"])
+def google_callback():
+    token = auth.google.authorize_access_token()
+    user_info = auth.google.parse_id_token(token)
+
+    email = user_info.get("email")
+    fullname = user_info.get("name")
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT id, fullname, email, role FROM users WHERE email=%s",
+        (email,)
+    )
+    user = cursor.fetchone()
+
+    if not user:
+        # User does not exist, create a new user
+        cursor.execute(
+            "INSERT INTO users (fullname, email, is_verified) VALUES (%s, %s, TRUE)",
+            (fullname, email)
+        )
+        conn.commit()
+        user_id = cursor.lastrowid
+        role = "user"  # Default role for new users
+    else:
+        user_id = user["id"]
+        role = user["role"]
+
+    access_token = create_access_token(
+        identity=str(user_id),
+        additional_claims={
+            "role": role,
+            "email": email
+        }
+    )
+
+    return jsonify({
+        "success": True,
+        "message": "Login successful",
+        "access_token": access_token,
+        "user": {
+            "id": user_id,
+            "fullname": fullname,
+            "email": email,
+            "role": role
+        }
+    }), 200
