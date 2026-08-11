@@ -13,7 +13,19 @@ bcrypt.init_app(app)
 mail.init_app(app)
 jwt.init_app(app)
 oauth.init_app(app)
-CORS(app, origins=["http://localhost:5173"], supports_credentials=True)
+
+
+CORS(
+    app,
+    resources={
+        r"/api/*": {
+            "origins": [
+                "https://flask-api-sigma-pied.vercel.app"
+                "http://localhost:5173"
+            ]
+        }
+    }, supports_credentials=True
+)
 
 app.register_blueprint(auth_bp, url_prefix="/api/auth")
 
