@@ -243,7 +243,7 @@ def forgot_password():
 
         cursor.execute("""
             UPDATE users
-            SET reset_token = %s, expires_date = %s
+            SET reset_token = %s, expire_date = %s
             WHERE id = %s
         """, (reset_token, expires_at, user["id"]))
 
@@ -317,7 +317,7 @@ def reset_password(token):
         cursor.execute("""
             SELECT id
             FROM users
-            WHERE reset_token = %s AND expires_date > NOW()
+            WHERE reset_token = %s AND expire_date > NOW()
         """, (token,))
 
         user = cursor.fetchone()
@@ -331,7 +331,7 @@ def reset_password(token):
 
         cursor.execute("""
             UPDATE users
-            SET password = %s, reset_token = NULL, expires_date = NULL
+            SET password = %s, reset_token = NULL, expire_date = NULL
             WHERE id = %s
         """, (hashed_password, user["id"]))
 
