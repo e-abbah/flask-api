@@ -17,14 +17,13 @@ oauth.init_app(app)
 
 CORS(
     app,
-    resources={
-        r"/api/*": {
-            "origins": [
-                "https://flask-api-sigma-pied.vercel.app"
-                "http://localhost:5173"
-            ]
-        }
-    }, supports_credentials=True
+    origins=[
+        "http://localhost:5173",
+        "https://flask-api-sigma-pied.vercel.app"
+    ],
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
+    supports_credentials=True
 )
 
 app.register_blueprint(auth_bp, url_prefix="/api/auth")
