@@ -249,7 +249,7 @@ def forgot_password():
 
 
 
-        reset_link = f"http://localhost:5173/reset-password/{reset_token}"
+        reset_link = f"https://flask-api-sigma-pied.vercel.app/reset-password/{reset_token}"
 
         html = f"""
         <h2>Password Reset Request</h2>
