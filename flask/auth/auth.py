@@ -242,7 +242,7 @@ def forgot_password():
         expires_at = datetime.now() + timedelta(minutes=30)
 
         cursor.execute("""
-            UPDATE Users
+            UPDATE users
             SET reset_token = %s, expires_date = %s
             WHERE id = %s
         """, (reset_token, expires_at, user["id"]))
@@ -316,7 +316,7 @@ def reset_password(token):
 
         cursor.execute("""
             SELECT id
-            FROM Users
+            FROM users
             WHERE reset_token = %s AND expires_date > NOW()
         """, (token,))
 
