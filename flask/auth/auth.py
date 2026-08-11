@@ -227,7 +227,7 @@ def forgot_password():
 
         cursor.execute("""
             SELECT id, fullname, email
-            FROM Users
+            FROM users
             WHERE email=%s
         """, (email,))
 
@@ -330,7 +330,7 @@ def reset_password(token):
         hashed_password = bcrypt.generate_password_hash(new_password).decode("utf-8")
 
         cursor.execute("""
-            UPDATE Users
+            UPDATE users
             SET password = %s, reset_token = NULL, expires_date = NULL
             WHERE id = %s
         """, (hashed_password, user["id"]))
