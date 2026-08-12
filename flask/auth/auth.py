@@ -140,7 +140,6 @@ def verify_email(token):
     finally:
         cursor.close()
         conn.close()
-from flask_jwt_extended import create_access_token
 
 @auth_bp.route("/login", methods=["POST"])
 def login():

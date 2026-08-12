@@ -2,6 +2,7 @@ from extension import oauth
 from config import Config
 
 google = oauth.register(
+    name="google",
     client_id=Config.GOOGLE_CLIENT_ID,
     client_secret=Config.GOOGLE_CLIENT_SECRET,
     client_kwargs={
