@@ -17,6 +17,7 @@ class Config:
     MAIL_FROM_TITLE = os.getenv("MAIL_FROM_TITLE")
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
     MY_SECRET_KEY = os.getenv("MY_SECRET_KEY")
+    SECRET_KEY = os.getenv("SECRET_KEY")
 
     MAIL_SERVER = os.getenv("MAIL_SERVER")
     # MAIL_PORT = int(os.getenv("MAIL_PORT"))
