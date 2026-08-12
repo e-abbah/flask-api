@@ -478,7 +478,7 @@ def google_callback():
                     VALUES (%s, %s, %s)
                 """, (user_id, 'google', google_id))
 
-        conn.commit()
+            conn.commit()
 
         #Generate JWT token for the user
         access_token = create_access_token(
