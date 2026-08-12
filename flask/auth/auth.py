@@ -211,146 +211,6 @@ def login():
         cursor.close()
         conn.close()
 
-# @auth_bp.route("/forgot-password", methods=["POST"])
-# def forgot_password():
-#     data = request.get_json()
-#     email = data.get("email")
-
-#     if not email:
-#         return jsonify({
-#             "success": False,
-#             "message": "Email is required."
-#         }), 400
-#     try:
-#         conn = get_connection()
-#         cursor = conn.cursor()
-
-#         cursor.execute("""
-#             SELECT id, fullname, email
-#             FROM users
-#             WHERE email=%s
-#         """, (email,))
-
-#         user = cursor.fetchone()
-#         if not user:
-#             return jsonify({
-#                 "success": False,
-#                 "message": "Email not found."
-#             }), 404
-        
-#         reset_token = secrets.token_urlsafe(32)
-#         expires_at = datetime.now() + timedelta(minutes=30)
-
-#         cursor.execute("""
-#             UPDATE users
-#             SET reset_token = %s, expire_date = %s
-#             WHERE id = %s
-#         """, (reset_token, expires_at, user["id"]))
-
-
-
-#         reset_link = f"https://flask-api-sigma-pied.vercel.app/reset-password/{reset_token}"
-
-#         html = f"""
-#         <h2>Password Reset Request</h2>
-#         <p>Hello {user['fullname']},</p>
-#         <p>We received a request to reset your password.</p>
-#         <p>
-#             <a href="{reset_link}"
-#                style="
-#                     background:#2563eb;
-#                     color:white;
-#                     padding:12px 20px;
-#                     text-decoration:none;
-#                     border-radius:6px;">
-#                 Reset Password
-#             </a>
-#         </p>
-#         <p>This link will expire in <strong>30 minutes</strong>.</p>
-#         <p>If you didn't request a password reset, you can safely ignore this email.</p>
-#         <br>
-#         <p>Learning Platform Team</p>
-#         """
-
-#         send_verification_email(
-#             email,
-#             "Password Reset",
-#             html
-#         )
-
-#         return jsonify({
-#             "success": True,
-#             "message": "Password reset link sent to your email."
-#         }), 200
-
-#     except Exception as e:
-#         return jsonify({
-#             "success": False,
-#             "message": str(e)
-#         }), 500
-
-#     finally:
-#         cursor.close()
-#         conn.close()
-
-
-# @auth_bp.route("/reset-password/<token>", methods=["POST"])
-# def reset_password(token):
-#     data = request.get_json()
-#     new_password = data.get("new_password")
-
-#     if not new_password:
-#         return jsonify({
-#             "success": False,
-#             "message": "New password is required."
-#         }), 400
-
-#     if new_password < 6:
-#         return jsonify({
-#             "success": False,
-#             "message": "Password must be at least 6 characters long."
-#         }), 400
-#     try:
-#         conn = get_connection()
-#         cursor = conn.cursor()
-
-#         cursor.execute("""
-#             SELECT id
-#             FROM users
-#             WHERE reset_token = %s AND expire_date > NOW()
-#         """, (token,))
-
-#         user = cursor.fetchone()
-#         if not user:
-#             return jsonify({
-#                 "success": False,
-#                 "message": "Invalid or expired token."
-#             }), 400
-
-#         hashed_password = bcrypt.generate_password_hash(new_password).decode("utf-8")
-
-#         cursor.execute("""
-#             UPDATE users
-#             SET password = %s, reset_token = NULL, expire_date = NULL
-#             WHERE id = %s
-#         """, (hashed_password, user["id"]))
-
-#         return jsonify({
-#             "success": True,
-#             "message": "Password reset successful."
-#         }), 200
-
-#     except Exception as e:
-#         return jsonify({
-#             "success": False,
-#             "message": str(e)
-#         }), 500
-
-#     finally:
-#         cursor.close()
-#         conn.close()
-#
-
 @auth_bp.route("/forgot-password", methods=["POST"])
 def forgot_password():
     data = request.get_json()
@@ -550,57 +410,92 @@ def reset_password(token):
             conn.close()
 
 
-@auth_bp.route("/google", methods=["POST"])
+@auth_bp.route("/google", methods=["GET"])
 def google_login():
     redirect_uri = url_for("auth.google_callback", _external=True)
-    return auth.google.authorize_redirect(redirect_uri)
+    print(f"Redirect URI: {redirect_uri}")
+    return google.authorize_redirect(redirect_uri)
 
-@auth_bp.route("/google/callback", methods=["GET"])
+
+    
+@auth_bp.route('/google/callback', methods=["GET"])
 def google_callback():
-    token = auth.google.authorize_access_token()
-    user_info = auth.google.parse_id_token(token)
 
-    email = user_info.get("email")
-    fullname = user_info.get("name")
+    try: 
+        token = google.authorize_access_token()
+        user_info = token.get("user_info")
+        
+        if not user_info:
+            return jsonify({"success": False, "message": "Unable to retrieve user information."}), 400
 
-    conn = get_connection()
-    cursor = conn.cursor()
 
-    cursor.execute(
-        "SELECT id, fullname, email, role FROM users WHERE email=%s",
-        (email,)
-    )
-    user = cursor.fetchone()
+        email = user_info.get("email")
+        fullname = user_info.get("name")
+        google_id = user_info.get("sub")
 
-    if not user:
-        # User does not exist, create a new user
-        cursor.execute(
-            "INSERT INTO users (fullname, email, is_verified) VALUES (%s, %s, TRUE)",
-            (fullname, email)
-        )
+        if not email or not google_id:
+            return jsonify({"success": False, "message": "Incomplete user information from Google."}), 400
+        
+        #check if google account already exists
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT u.id, u.fullname, u.email, u.role, u.is_verified
+            FROM OAuthAccounts o
+            JOIN Users u ON o.user_id = u.id
+            WHERE o.provider = %s AND o.provider_user_id = %s
+        """, ('google', google_id))
+
+        user = cursor.fetchone()
+        if user:
+            user_id = user["id"]
+        else:
+            #check if email already exists in Users table
+            cursor.execute("""
+                SELECT id FROM Users WHERE email = %s
+            """, (email,))
+            existing_user = cursor.fetchone()
+
+            if existing_user:
+                user_id = existing_user["id"]
+
+                #Link the Google account to the existing user
+                cursor.execute("""
+                    INSERT INTO OAuthAccounts (user_id, provider, provider_user_id)
+                    VALUES (%s, %s, %s)
+                """, (user_id, 'google', google_id))
+            else:
+                #Create a new user and link the Google account
+                cursor.execute("""
+                    INSERT INTO Users (fullname, email, password, is_verified, role)
+                    VALUES (%s, %s, %s, %s, %s)
+                """, (fullname, email, None, True, 'user'))
+                user_id = cursor.lastrowid
+
+                cursor.execute("""
+                    INSERT INTO OAuthAccounts (user_id, provider, provider_user_id)
+                    VALUES (%s, %s, %s)
+                """, (user_id, 'google', google_id))
+
         conn.commit()
-        user_id = cursor.lastrowid
-        role = "user"  # Default role for new users
-    else:
-        user_id = user["id"]
-        role = user["role"]
 
-    access_token = create_access_token(
-        identity=str(user_id),
-        additional_claims={
-            "role": role,
-            "email": email
-        }
-    )
+        #Generate JWT token for the user
+        access_token = create_access_token(
+            identity=str(user_id),)
+        
+        cursor.close()
+        conn.close()
 
-    return jsonify({
-        "success": True,
-        "message": "Login successful",
-        "access_token": access_token,
-        "user": {
-            "id": user_id,
-            "fullname": fullname,
-            "email": email,
-            "role": role
-        }
-    }), 200
+        return jsonify({
+            "success": True,
+            "message": "Google authentication successful.",
+            "access_token": access_token
+        }), 200
+
+    except Exception as e:
+        try:
+            conn.rollback()
+        except:
+            pass
+        return jsonify({"success": False, "message": f"Error during Google OAuth: {str(e)}"}), 500
