@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, url_for
 from email_validator import validate_email, EmailNotValidError
 from extension import bcrypt
 from db import get_connection
@@ -6,6 +6,7 @@ import secrets
 from email_service import send_verification_email
 from flask_jwt_extended import create_access_token
 from datetime import datetime, timedelta
+
 
 
 auth_bp = Blueprint("auth", __name__)
