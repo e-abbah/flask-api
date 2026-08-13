@@ -445,7 +445,7 @@ def google_callback():
         cursor.execute("""
             SELECT u.id, u.fullname, u.email, u.role, u.is_verified
             FROM OAuthAccount o
-            JOIN Users u ON o.user_id = u.id
+            JOIN users u ON o.user_id = u.id
             WHERE o.provider = %s AND o.provider_user_id = %s
         """, ('google', google_id))
 
@@ -453,9 +453,9 @@ def google_callback():
         if user:
             user_id = user["id"]
         else:
-            #check if email already exists in Users table
+            #check if email already exists in users table
             cursor.execute("""
-                SELECT id FROM Users WHERE email = %s
+                SELECT id FROM users WHERE email = %s
             """, (email,))
             existing_user = cursor.fetchone()
 
@@ -470,7 +470,7 @@ def google_callback():
             else:
                 #Create a new user and link the Google account
                 cursor.execute("""
-                    INSERT INTO Users (fullname, email, password, is_verified, role)
+                    INSERT INTO users (fullname, email, password, is_verified, role)
                     VALUES (%s, %s, %s, %s, %s)
                 """, (fullname, email, None, True, 'user'))
                 user_id = cursor.lastrowid
