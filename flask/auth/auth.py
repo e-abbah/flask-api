@@ -464,7 +464,7 @@ def google_callback():
 
                 #Link the Google account to the existing user
                 cursor.execute("""
-                    INSERT INTO OAuthAccounts (user_id, provider, provider_user_id)
+                    INSERT INTO OAuthAccount (user_id, provider, provider_user_id)
                     VALUES (%s, %s, %s)
                 """, (user_id, 'google', google_id))
             else:
@@ -476,7 +476,7 @@ def google_callback():
                 user_id = cursor.lastrowid
 
                 cursor.execute("""
-                    INSERT INTO OAuthAccounts (user_id, provider, provider_user_id)
+                    INSERT INTO OAuthAccount (user_id, provider, provider_user_id)
                     VALUES (%s, %s, %s)
                 """, (user_id, 'google', google_id))
 
