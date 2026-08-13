@@ -421,10 +421,11 @@ def google_login():
     
 @auth_bp.route('/google/callback', methods=["GET"])
 def google_callback():
+    #testing to see if this works now
 
     try: 
         token = google.authorize_access_token()
-        user_info = token.get("user_info")
+        user_info = token.get("userinfo")
         
         if not user_info:
             return jsonify({"success": False, "message": "Unable to retrieve user information."}), 400
@@ -443,7 +444,7 @@ def google_callback():
 
         cursor.execute("""
             SELECT u.id, u.fullname, u.email, u.role, u.is_verified
-            FROM OAuthAccounts o
+            FROM OAuthAccount o
             JOIN Users u ON o.user_id = u.id
             WHERE o.provider = %s AND o.provider_user_id = %s
         """, ('google', google_id))
