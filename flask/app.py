@@ -43,7 +43,7 @@ CORS(
 
 # Register authentication routes
 app.register_blueprint(auth_bp, url_prefix="/api/auth")
-app.register_blueprint(courses_bp, url_prefix="/")
+app.register_blueprint(courses_bp, url_prefix="/api/instructor")
 
 
 if __name__ == "__main__":
