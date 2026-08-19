@@ -501,3 +501,7 @@ def google_callback():
         except:
             pass
         return jsonify({"success": False, "message": f"Error during Google OAuth: {str(e)}"}), 500
+
+@auth_bp.route('/courses', methods=["GET"])
+def getCourse():
+    return "<p>Welcome to course endpoint</p>"
