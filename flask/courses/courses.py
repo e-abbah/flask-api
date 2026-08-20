@@ -23,7 +23,8 @@ def course():
     description = data.get("description")
     thumbnail = data.get("description")
     status = data.get('status', "DRAFT")
-    
+
+   
     
     if not title.strip():
         return jsonify({"success": False, "message": "Course title must be provided."}), 400
@@ -54,7 +55,7 @@ def course():
         VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
         """,
         {user_id,
-         title,
+         title.strip(),
          slug,
          description,
          thumbnail,
@@ -63,13 +64,81 @@ def course():
          status,
          free_count
          })
+        course_id = cursor.lastrowid
+        cursor.commit()
+        return jsonify({
+            "success": True,
+            "message": "Course created successfully",
+            "course": {
+                "id": course_id,
+                "instructor": user_id,
+                "title": title,
+                "slug": slug,
+                "description": description,
+                "thumbnail": thumbnail,
+                "price": price,
+                "currency": currency,
+                "status": status,
+                "free_count": free_count
 
+
+            }
+        })
+    
     
     except Exception as e:
-        return jsonify({"error": e})
+        return jsonify({"success": False, 
+                        "message":"failed to create course", 
+                        "error": str(e)}), 500
     finally:
         if conn:
             conn.close()
 
-    print(data)
-    return jsonify({"message":"Welcome to courses."})
+@course_bp.route("/<int:course_id>/modules", methods=["POST"])
+@jwt_required()
+def create_module(course_id):
+    user_id = get_jwt_identity()
+    data = request.get_json()
+
+    title = data.get('title')
+    description = data.get('description')
+    position = data.get('position')
+
+    if not title:
+        return jsonify({"success": False, "message": "Module title is required!"}), 400
+    
+
+    if not title.strip():
+        return jsonify({"success": False, "message": "Title cannot be empty!"}), 400
+    
+    conn = None
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, title FROM course WHERE id = %s AND instructor_id = %s
+        """, (course_id, user_id))
+
+        course = cursor.fetchone()
+        if not course:
+            return jsonify({"success": False, "message": "Course is not found!"}), 404
+        
+        cursor.execute("""
+                        INSERT INTO module
+                        (course_id, title, description, position) VALUES
+                        (%s, %s, %s, %s)
+        """, (course_id, title, description, position))
+        module_id = cursor.lastrowid
+        conn.commit()
+        return jsonify({
+            "success": True,
+            "message": "Course created successfully",
+            "course": {
+                "id": module_id,
+                "instructor": user_id,
+                "title": title
+            }
+        }), 201
+
+    except Exception as e:
+        return jsonify({"success": False, "message": "Failed to create module", "error": str(e)}), 500
